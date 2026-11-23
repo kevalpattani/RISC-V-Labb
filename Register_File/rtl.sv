@@ -1,24 +1,28 @@
-module regfile (
-    input  logic         clk,
-    input  logic         we3,
-    input  logic [4:0]   a1,
-    input  logic [4:0]   a2,
-    input  logic [4:0]   a3,
-    input  logic [31:0]  wd3,
-    output logic [31:0]  rd1,
-    output logic [31:0]  rd2
+module register_file (
+    input  logic        clk,
+    input  logic        reset,
+    input  logic        write_enable,
+    input  logic [4:0]  read_address1,
+    input  logic [4:0]  read_address2,
+    input  logic [4:0]  write_address,
+    input  logic [31:0] write_data,
+    output logic [31:0] read_data1,
+    output logic [31:0] read_data2
 );
-    logic [31:0] rf [0:31];
+    logic [31:0] registers [0:31];
+    integer i;
 
-    // Two combinational read ports. x0 is hardwired to zero.
-    always_comb begin
-        rd1 = (a1 == 5'd0) ? 32'b0 : rf[a1];
-        rd2 = (a2 == 5'd0) ? 32'b0 : rf[a2];
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset) begin
+            for (i = 0; i < 32; i = i + 1)
+                registers[i] <= 32'b0;
+        end else if (write_enable && (write_address != 5'b0)) begin
+            registers[write_address] <= write_data;
+        end
     end
 
-    // One synchronous write port; writes to x0 are discarded.
-    always_ff @(posedge clk) begin
-        if (we3 && (a3 != 5'd0))
-            rf[a3] <= wd3;
+    always_comb begin
+        read_data1 = (read_address1 == 5'b0) ? 32'b0 : registers[read_address1];
+        read_data2 = (read_address2 == 5'b0) ? 32'b0 : registers[read_address2];
     end
 endmodule
