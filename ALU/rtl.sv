@@ -1,25 +1,29 @@
-module alu (
-    input  logic [31:0] operand_a,
-    input  logic [31:0] operand_b,
-    input  logic [3:0]  operation,
-    output logic [31:0] result,
-    output logic        zero
+module alu #(parameter int DATA_WIDTH = 32) (
+    input logic [4:0] alu_control,
+    input logic [DATA_WIDTH-1:0] rs1_data, rs2_data,
+    output logic [DATA_WIDTH-1:0] alu_out,
+    output logic zero
 );
     always_comb begin
-        case (operation)
-            4'd0: result = operand_a + operand_b;
-            4'd1: result = operand_a - operand_b;
-            4'd2: result = operand_a << operand_b[4:0];
-            4'd3: result = ($signed(operand_a) < $signed(operand_b)) ? 32'd1 : 32'd0;
-            4'd4: result = (operand_a < operand_b) ? 32'd1 : 32'd0;
-            4'd5: result = operand_a ^ operand_b;
-            4'd6: result = operand_a >> operand_b[4:0];
-            4'd7: result = $signed(operand_a) >>> operand_b[4:0];
-            4'd8: result = operand_a | operand_b;
-            4'd9: result = operand_a & operand_b;
-            4'd10: result = operand_b;
-            default: result = 32'b0;
+        alu_out='0; zero=1'b0;
+        case (alu_control)
+            5'b00000: alu_out=rs1_data+rs2_data;
+            5'b00001: alu_out=rs1_data-rs2_data;
+            5'b00010: alu_out=rs1_data^rs2_data;
+            5'b00011: alu_out=rs1_data|rs2_data;
+            5'b00100: alu_out=rs1_data&rs2_data;
+            5'b00101: alu_out=rs1_data<<rs2_data[4:0];
+            5'b00110: alu_out=rs1_data>>rs2_data[4:0];
+            5'b00111: alu_out=$signed(rs1_data)>>>rs2_data[4:0];
+            5'b01000: alu_out=($signed(rs1_data)<$signed(rs2_data)) ? {{(DATA_WIDTH-1){1'b0}},1'b1} : '0;
+            5'b01001: alu_out=(rs1_data<rs2_data) ? {{(DATA_WIDTH-1){1'b0}},1'b1} : '0;
+            5'b01010: zero=(rs1_data==rs2_data);
+            5'b01011: zero=(rs1_data!=rs2_data);
+            5'b01100: zero=($signed(rs1_data)<$signed(rs2_data));
+            5'b01101: zero=($signed(rs1_data)>=$signed(rs2_data));
+            5'b01110: zero=(rs1_data<rs2_data);
+            5'b01111: zero=(rs1_data>=rs2_data);
+            default: begin alu_out='0; zero=1'b0; end
         endcase
-        zero = (result == 32'b0);
     end
 endmodule

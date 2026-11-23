@@ -1,30 +1,38 @@
 module alu_control (
-    input  logic [6:0] opcode,
-    input  logic [2:0] fn3,
-    input  logic [6:0] fn7,
-    output logic [3:0] operation
+    input logic [2:0] alu_op, fn3,
+    input logic [6:0] imm11_5,
+    input logic fn7_5,
+    output logic [4:0] control_out
 );
-    localparam logic [3:0] ALU_ADD=4'd0, ALU_SUB=4'd1, ALU_SLL=4'd2,
-        ALU_SLT=4'd3, ALU_SLTU=4'd4, ALU_XOR=4'd5, ALU_SRL=4'd6,
-        ALU_SRA=4'd7, ALU_OR=4'd8, ALU_AND=4'd9, ALU_COPY_B=4'd10;
     always_comb begin
-        operation = ALU_ADD;
-        case (opcode)
-            7'b0110011, 7'b0010011: begin
+        control_out=5'b00000;
+        case (alu_op)
+            3'b000, 3'b001: begin
                 case (fn3)
-                    3'b000: operation = (opcode == 7'b0110011 && fn7[5]) ? ALU_SUB : ALU_ADD;
-                    3'b001: operation = ALU_SLL;
-                    3'b010: operation = ALU_SLT;
-                    3'b011: operation = ALU_SLTU;
-                    3'b100: operation = ALU_XOR;
-                    3'b101: operation = fn7[5] ? ALU_SRA : ALU_SRL;
-                    3'b110: operation = ALU_OR;
-                    3'b111: operation = ALU_AND;
-                    default: operation = ALU_ADD;
+                    3'b000: control_out=(alu_op==3'b000 && fn7_5) ? 5'b00001 : 5'b00000;
+                    3'b001: control_out=5'b00101;
+                    3'b010: control_out=5'b01000;
+                    3'b011: control_out=5'b01001;
+                    3'b100: control_out=5'b00010;
+                    3'b101: control_out=(alu_op==3'b000 ? fn7_5 : (imm11_5==7'h20)) ? 5'b00111 : 5'b00110;
+                    3'b110: control_out=5'b00011;
+                    3'b111: control_out=5'b00100;
+                    default: control_out=5'b00000;
                 endcase
             end
-            7'b0110111: operation = ALU_COPY_B;
-            default: operation = ALU_ADD;
+            3'b010, 3'b011, 3'b110: control_out=5'b00000;
+            3'b100: begin
+                case (fn3)
+                    3'b000: control_out=5'b01010;
+                    3'b001: control_out=5'b01011;
+                    3'b100: control_out=5'b01100;
+                    3'b101: control_out=5'b01101;
+                    3'b110: control_out=5'b01110;
+                    3'b111: control_out=5'b01111;
+                    default: control_out=5'b00000;
+                endcase
+            end
+            default: control_out=5'b00000;
         endcase
     end
 endmodule
